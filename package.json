@@ -1,7 +1,7 @@
 {
-  "name": "regl-instanced-lines-2",
+  "name": "instanced-lines-demo",
   "version": "1.0.0",
-  "description": "",
+  "description": "This is my experiments with WebGL lines from https://github.com/wwwtyro/instanced-lines-demos",
   "main": "index.html",
   "scripts": {
     "start": "parcel index.html --open",
