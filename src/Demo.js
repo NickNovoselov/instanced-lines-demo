@@ -3,20 +3,7 @@ import * as strips from './strips';
 import * as joins from './joins';
 import * as caps from './caps';
 
-export function generateSamplePointsInterleaved(width, height) {
-  const stepx = width / 9;
-  const stepy = height / 3;
-  const points = [];
-
-  for (let x = 1; x < 9; x += 2) {
-    points.push([(x + 0) * stepx - width / 2, 1 * stepy - height / 2]);
-    points.push([(x + 1) * stepx - width / 2, 2 * stepy - height / 2]);
-  }
-
-  return points;
-}
-
-export const convertColor = (color) => [...color.map(c => c / 255), 1];
+export const convertColor = color => [...color.map(c => c / 255), 1];
 
 export class Demo {
   constructor({
@@ -25,24 +12,31 @@ export class Demo {
     linejoin = 'miter',
     linecap = 'butt',
     linestrip = 'regular',
+    pointData = [],
     highlightCorners = true,
-    color = [255, 248, 222],
-    borderColor = [255, 0, 0],
+    colorA = [46, 46, 46],
+    colorB = [255, 255, 255],
+    borderColorA = [255, 50, 50],
+    borderColorB = [255, 0, 0],
     lineWidth = 2,
     borderWidth = 0
   } = {}) {
     this.regl = regl;
     this.canvas = canvas;
     this.context = {};
+    this.pointData = pointData;
     this.linejoin = linejoin;
     this.linecap = linecap;
     this.linestrip = linestrip;
     this.highlightCorners = highlightCorners;
-    this.color = color;
-    this.borderColor = borderColor;
+    this.colorA = colorA;
+    this.colorB = colorB;
+    this.borderColorA = borderColorA;
+    this.borderColorB = borderColorB;
     this.lineWidth = lineWidth;
     this.borderWidth = borderWidth;
     this.stop = false;
+    this.animate = true;
 
     const projection = mat4.ortho(
       mat4.create(),
@@ -54,29 +48,24 @@ export class Demo {
       -1
     );
 
-    const pointData = generateSamplePointsInterleaved(
-      canvas.width,
-      canvas.height
-    );
-
-    const buffer = this.regl.buffer(pointData);
-
     let tick = 0;
     const loop = () => {
       if (this.stop) {
         return;
       }
       requestAnimationFrame(loop);
+      if (this.animate) {
+        tick++;
+      }
 
-      tick++;
       const scale = 0.45 * Math.sin(tick * 0.04) + 0.75;
       const scaledData = [];
 
-      for (const point of pointData) {
+      for (const point of this.pointData) {
         scaledData.push([point[0] * scale, point[1]]);
       }
 
-      buffer({
+      this.buffer({
         data: scaledData
       });
 
@@ -87,19 +76,24 @@ export class Demo {
         height: this.canvas.height
       };
 
+      const resolution = [this.canvas.width, this.canvas.height];
+
       if (this.borderWidth > 0) {
         this.render({
           regl: this.regl,
           context: this.context,
-          buffer,
+          buffer: this.buffer,
           canvas: this.canvas,
           projection,
           viewport,
-          pointData,
+          resolution,
+          pointData: this.pointData,
           scaledData,
           highlightCorners: false,
-          color: this.borderColorHex,
-          borderColor: this.borderColorHex,
+          colorA: this.borderColorAHex,
+          colorB: this.borderColorBHex,
+          borderColorA: this.borderColorAHex,
+          borderColorB: this.borderColorBHex,
           lineWidth: this.lineWidth + this.borderWidth * 2
         });
       }
@@ -107,15 +101,18 @@ export class Demo {
       this.render({
         regl: this.regl,
         context: this.context,
-        buffer,
+        buffer: this.buffer,
         canvas: this.canvas,
         projection,
         viewport,
-        pointData,
+        resolution,
+        pointData: this.pointData,
         scaledData,
         highlightCorners: this.highlightCorners,
-        color: this.colorHex,
-        borderColor: this.borderColorHex,
+        colorA: this.colorAHex,
+        colorB: this.colorBHex,
+        borderColorA: this.borderColorAHex,
+        borderColorB: this.borderColorBHex,
         lineWidth: this.lineWidth
       });
     };
@@ -129,6 +126,16 @@ export class Demo {
     this.renderCap(params);
   }
 
+  set pointData(pointData) {
+    this.points = pointData;
+
+    this.buffer = this.regl.buffer(pointData);
+  }
+
+  get pointData() {
+    return this.points;
+  }
+
   set linestrip(linestrip) {
     const strip = strips[linestrip];
 
@@ -137,7 +144,11 @@ export class Demo {
     }
 
     this.strip = linestrip;
-    this.context.strip = strip.context({ regl: this.regl, canvas: this.canvas, lineWidth: this.lineWidth });
+    this.context.strip = strip.context({
+      regl: this.regl,
+      canvas: this.canvas,
+      lineWidth: this.lineWidth
+    });
     this.renderStrip = strip.render;
   }
 
@@ -153,7 +164,11 @@ export class Demo {
     }
 
     this.join = linejoin;
-    this.context.join = join.context({ regl: this.regl, canvas: this.canvas, lineWidth: this.lineWidth });
+    this.context.join = join.context({
+      regl: this.regl,
+      canvas: this.canvas,
+      lineWidth: this.lineWidth
+    });
     this.renderJoin = join.render;
   }
 
@@ -169,7 +184,11 @@ export class Demo {
     }
 
     this.cap = linecap;
-    this.context.cap = cap.context({ regl: this.regl, canvas: this.canvas, lineWidth: this.lineWidth });
+    this.context.cap = cap.context({
+      regl: this.regl,
+      canvas: this.canvas,
+      lineWidth: this.lineWidth
+    });
     this.renderCap = cap.render;
   }
 
@@ -177,22 +196,40 @@ export class Demo {
     return this.cap;
   }
 
-  set color(color) {
-    this.colorRGB = color;
-    this.colorHex = convertColor(color);
+  set colorA(colorA) {
+    this.colorARGB = colorA;
+    this.colorAHex = convertColor(colorA);
   }
 
-  get color() {
-    return this.colorRGB;
+  get colorA() {
+    return this.colorARGB;
   }
 
-  set borderColor(borderColor) {
-    this.borderColorRGB = borderColor;
-    this.borderColorHex = convertColor(borderColor);
+  set colorB(colorB) {
+    this.colorBRGB = colorB;
+    this.colorBHex = convertColor(colorB);
   }
 
-  get borderColor() {
-    return this.borderColorRGB;
+  get colorB() {
+    return this.colorBRGB;
+  }
+
+  set borderColorA(borderColorA) {
+    this.borderColorARGB = borderColorA;
+    this.borderColorAHex = convertColor(borderColorA);
+  }
+
+  get borderColorA() {
+    return this.borderColorARGB;
+  }
+
+  set borderColorB(borderColorB) {
+    this.borderColorBRGB = borderColorB;
+    this.borderColorBHex = convertColor(borderColorB);
+  }
+
+  get borderColorB() {
+    return this.borderColorBRGB;
   }
 
   destroy() {

@@ -8,8 +8,10 @@ export default {
     params.context.join({
       points: params.buffer,
       width: params.lineWidth,
-      color: params.highlightCorners ? params.borderColor : params.color,
+      colorA: params.highlightCorners ? params.borderColorA : params.colorA,
+      colorB: params.highlightCorners ? params.borderColorB : params.colorB,
       projection: params.projection,
+      resolution: params.resolution,
       viewport: params.viewport,
       instances: params.pointData.length - 2
     });

@@ -8,8 +8,10 @@ export default {
     params.context.strip({
       points: params.buffer,
       width: params.lineWidth,
-      color: params.color,
+      colorA: params.colorA,
+      colorB: params.colorB,
       projection: params.projection,
+      resolution: params.resolution,
       viewport: params.viewport,
       segments: params.pointData.length - 1
     });

@@ -15,9 +15,15 @@ export function roundJoin(regl, resolution) {
       }`,
     frag: `
       precision highp float;
-      uniform vec4 color;
+      uniform vec4 colorA;
+      uniform vec4 colorB;
+      uniform vec2 resolution;
       void main() {
-        gl_FragColor = color;
+        vec2 st = gl_FragCoord.xy / resolution.xy;
+        vec3 pct = vec3(st.x);
+        vec3 color = mix(vec3(colorA), vec3(colorB), pct);
+    
+        gl_FragColor = vec4(color, 1.0);
       }`,
     depth: {
       enable: false
@@ -35,8 +41,10 @@ export function roundJoin(regl, resolution) {
     },
     uniforms: {
       width: regl.prop('width'),
-      color: regl.prop('color'),
-      projection: regl.prop('projection')
+      colorA: regl.prop('colorA'),
+      colorB: regl.prop('colorB'),
+      projection: regl.prop('projection'),
+      resolution: regl.prop('resolution')
     },
     cull: {
       enable: true,
